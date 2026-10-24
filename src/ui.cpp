@@ -65,6 +65,24 @@ static void header(const char* title) {
     d.setTextDatum(middle_left);
     d.setFont(&fonts::Font2);
     d.drawString(title, 6, 11);
+
+    /* battery percentage, top-right (shown on every screen) */
+    int pct = M5.Power.getBatteryLevel();        /* 0..100, <0 if unknown */
+    if(pct >= 0) {
+        if(pct > 100) pct = 100;
+        bool chg = M5.Power.isCharging();
+        uint16_t bc = chg      ? COL_OK
+                    : pct > 50 ? COL_OK
+                    : pct > 20 ? 0xFE40      /* amber */
+                               : COL_ERR;
+        char t[8];
+        snprintf(t, sizeof(t), "%s%d%%", chg ? "+" : "", pct);
+        d.setFont(&fonts::Font0);
+        d.setTextColor(bc, 0x18E3);
+        d.setTextDatum(middle_right);
+        d.drawString(t, d.width() - 5, 11);
+        d.setTextDatum(middle_left);         /* restore default datum */
+    }
 }
 
 static void footer(const char* a, const char* b, const char* pwr) {
@@ -421,6 +439,12 @@ void ui_loop() {
         }
     } else {
         s_last_seq = st.seq;
+        /* keep the header battery reading fresh on static screens */
+        static uint32_t last_batt = 0;
+        if(millis() - last_batt > 15000) {
+            last_batt = millis();
+            s_dirty = true;
+        }
     }
 
     if(s_dirty) redraw();
