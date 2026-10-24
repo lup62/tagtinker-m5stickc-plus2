@@ -1,0 +1,72 @@
+<!-- TagTinker M5 integration: appended to the Image Prep tool. -->
+<style>
+#m5bar{position:sticky;bottom:0;z-index:50;margin-top:18px;padding:14px 16px;
+  background:#15181d;border-top:1px solid #2a2f37;border-radius:12px 12px 0 0;
+  box-shadow:0 -6px 20px rgba(0,0,0,.35)}
+#m5bar h3{margin:0 0 8px;font-size:14px}
+#m5bar .m5row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#m5bar select,#m5bar button{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #323842;
+  background:#1d2026;color:#e8eaed;cursor:pointer}
+#m5bar button.go{background:#6c8cff;border-color:#6c8cff;color:#0b0d12;font-weight:600}
+#m5bar button:disabled{opacity:.5;cursor:default}
+#m5msg{font-size:12px;color:#9aa0aa;margin-top:8px;min-height:16px}
+#m5bar a{color:#8fa6ff}
+</style>
+<div id="m5bar">
+  <h3>Send to M5StickC Plus2</h3>
+  <div class="m5row">
+    <button id="m5save" class="go">Save BMP to M5</button>
+    <select id="m5target" title="Saved target"></select>
+    <label style="font-size:12px">Page
+      <select id="m5page">
+        <option>1</option><option>2</option><option>3</option><option>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+      </select>
+    </label>
+    <button id="m5send">Save &amp; Send now</button>
+  </div>
+  <div id="m5msg">Connect to the M5 Wi-Fi, then save your prepared image straight to it — no SD card.</div>
+</div>
+<script>
+(function(){
+  const $m = s=>document.querySelector(s);
+  const msg = (t,err)=>{const e=$m("#m5msg");e.textContent=t;e.style.color=err?"#ff8080":"#9aa0aa";};
+  let targets=[];
+  async function refresh(){
+    try{
+      const r=await fetch("/api/state");const j=await r.json();
+      targets=(j.targets||[]).filter(t=>t.graphics);
+      const sel=$m("#m5target");const prev=sel.value;sel.innerHTML="";
+      if(!targets.length){const o=document.createElement("option");o.value="";o.textContent="(no graphic targets)";sel.appendChild(o);}
+      targets.forEach(t=>{const o=document.createElement("option");o.value=t.i;
+        o.textContent=`${t.name} · ${t.profile.w}x${t.profile.h} ${t.profile.color}`;sel.appendChild(o);});
+      if(prev)sel.value=prev;
+    }catch(e){msg("Not connected to the M5 (open this page from the M5 Wi-Fi).",true);}
+  }
+  function currentBmpBlob(){
+    if(typeof lastQuant==="undefined"||!lastQuant){msg("Prepare an image first.",true);return null;}
+    const p=currentProfile();
+    return {blob:new Blob([buildBmp(lastQuant,p.color)],{type:"image/bmp"}),name:buildFilename()};
+  }
+  async function saveToM5(){
+    const b=currentBmpBlob();if(!b)return null;
+    const fd=new FormData();fd.append("file",b.blob,b.name);
+    msg("Uploading "+b.name+" …");
+    const r=await fetch("/api/image/upload",{method:"POST",body:fd});
+    const j=await r.json();
+    if(!j.ok){msg(j.error||"Upload failed",true);return null;}
+    msg("Saved "+j.name+" ("+j.w+"x"+j.h+") to the M5 image library.");
+    return j.name;
+  }
+  $m("#m5save").addEventListener("click",saveToM5);
+  $m("#m5send").addEventListener("click",async()=>{
+    const sel=$m("#m5target");if(!sel.value){msg("Add a graphic target on the M5 first.",true);return;}
+    const name=await saveToM5();if(!name)return;
+    const body=new URLSearchParams({what:"image",target:sel.value,image:name,page:$m("#m5page").value});
+    const r=await fetch("/api/tx",{method:"POST",body});const j=await r.json();
+    if(!j.ok){msg(j.error||"Send failed",true);return;}
+    msg("Sending to \""+sel.options[sel.selectedIndex].textContent+"\" — point the M5 at the tag.");
+  });
+  refresh();setInterval(refresh,5000);
+})();
+</script>

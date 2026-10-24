@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TagTinker Flasher</title>
+<style>
+:root{
+  --bg:#0b0e13;--panel:#141922;--panel2:#1b2230;--line:#273041;
+  --text:#e8ecf3;--dim:#8b93a3;--accent:#ff5a3c;--accent2:#ffb13c;
+  --ok:#49d49a;--err:#ff6b6b;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){
+  --bg:#f3f5f9;--panel:#fff;--panel2:#eef1f6;--line:#dde2ec;--text:#161a22;--dim:#5a6273;}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:
+  radial-gradient(1200px 600px at 80% -10%,rgba(255,90,60,.12),transparent 60%),
+  radial-gradient(900px 500px at -10% 110%,rgba(255,177,60,.10),transparent 60%),var(--bg);
+  color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  line-height:1.55;min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:28px 16px 60px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.logo{width:40px;height:40px;border-radius:11px;flex:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));position:relative;
+  box-shadow:0 6px 20px rgba(255,90,60,.35)}
+.logo::after{content:"";position:absolute;inset:11px 9px;border:2.5px solid #0b0e13;border-radius:3px;
+  border-right-color:transparent;transform:rotate(-20deg)}
+h1{font-size:23px;margin:0;letter-spacing:-.02em}
+.sub{color:var(--dim);font-size:14px;margin:2px 0 22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,.02)}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 12px}
+.step{display:flex;gap:12px;margin-bottom:11px;font-size:14.5px}
+.step b{color:var(--accent2)}
+.num{flex:none;width:22px;height:22px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:12px;color:var(--dim);font-weight:600}
+button{font:inherit;font-weight:600;border:0;border-radius:11px;padding:13px 20px;cursor:pointer;
+  color:#160a06;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 8px 22px rgba(255,90,60,.30);transition:transform .08s,opacity .2s}
+button:active{transform:translateY(1px)}
+button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bar{height:12px;border-radius:7px;background:var(--panel2);overflow:hidden;margin-top:16px;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;width:0;border-radius:7px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .15s}
+.status{margin-top:12px;font-size:14px;color:var(--dim);min-height:20px}
+.status.ok{color:var(--ok)}.status.err{color:var(--err)}
+pre{background:#05070b;color:#b6c0d4;border:1px solid var(--line);border-radius:12px;padding:14px;
+  font-family:var(--mono);font-size:12px;line-height:1.5;max-height:230px;overflow:auto;white-space:pre-wrap;margin:14px 0 0}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:999px;
+  background:rgba(73,212,154,.14);color:var(--ok);border:1px solid rgba(73,212,154,.3)}
+.warn{background:rgba(255,177,60,.1);border:1px solid rgba(255,177,60,.35);border-radius:12px;padding:12px 14px;
+  font-size:13.5px;color:var(--text);margin-top:4px}
+a{color:var(--accent2)}
+code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:13px}
+.unsupported{display:none}
+.hide{display:none}
+.meta{font-size:12.5px;color:var(--dim);margin-top:10px;font-family:var(--mono)}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div><h1>TagTinker Flasher</h1></div>
+  </div>
+  <div class="sub">Flash <b>TagTinker</b> onto your M5StickC&nbsp;Plus2 — straight from this page, no software to install.</div>
+
+  <div id="nowebserial" class="card unsupported">
+    <h2>Browser not supported</h2>
+    <p>Web-serial flashing needs <b>Chrome</b>, <b>Edge</b> or another Chromium browser on desktop
+    (not Safari, Firefox, or iOS). Open this page there, or flash from the command line — see the README.</p>
+  </div>
+
+  <div class="card" id="guide">
+    <h2>Before you start</h2>
+    <div class="step"><span class="num">1</span><div>Plug the M5StickC&nbsp;Plus2 into this computer with a <b>USB-C data cable</b> (not charge-only).</div></div>
+    <div class="step"><span class="num">2</span><div>Click <b>Connect &amp; Flash</b>, then pick the port named like <code>CP210x</code> / <code>USB-Serial</code>.</div></div>
+    <div class="step"><span class="num">3</span><div>Keep it still while it writes (~30&nbsp;s). It reboots into TagTinker on its own.</div></div>
+    <div class="warn">Flashing replaces whatever firmware is on the Stick (e.g. UIFlow). You can always reflash UIFlow later with M5Burner.</div>
+  </div>
+
+  <div class="card">
+    <div class="btnrow">
+      <button id="flash">Connect &amp; Flash</button>
+      <button id="erase" class="ghost" title="Full chip erase, then flash — use if it misbehaves">Erase + Flash</button>
+      <span id="fwpill" class="pill hide">firmware loaded</span>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="status" id="status">Idle — ready when you are.</div>
+    <pre id="log" class="hide"></pre>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <div class="card">
+    <h2>After flashing</h2>
+    <div class="step"><span class="num">A</span><div>On the Stick, note the <b>Wi-Fi network</b> and password shown on screen (default pass <code>tagtinker</code>).</div></div>
+    <div class="step"><span class="num">B</span><div>Join that Wi-Fi from your phone/PC, then open <code>http://192.168.4.1</code> for the full control panel &amp; image tool.</div></div>
+    <div class="step"><span class="num">C</span><div>Front button = select · side button = next · top button = back.</div></div>
+  </div>
+
+  <div class="sub" style="text-align:center">IR ESL research · for hardware you own · GPL-3.0 · ported from i12bp8/TagTinker</div>
+</div>
+
+<script type="module">
+import { ESPLoader, Transport } from "https://cdn.jsdelivr.net/npm/esptool-js@0.5.4/bundle.js";
+
+const $ = s => document.querySelector(s);
+const logEl = $("#log"), statusEl = $("#status"), barEl = $("#bar"), metaEl = $("#meta");
+const FW_URL = "./tagtinker-m5stickc-plus2-full.bin";
+
+if (!("serial" in navigator)) {
+  $("#nowebserial").style.display = "block";
+  $("#flash").disabled = true; $("#erase").disabled = true;
+}
+
+function setStatus(t, cls){ statusEl.textContent = t; statusEl.className = "status" + (cls?(" "+cls):""); }
+function log(line){ logEl.classList.remove("hide"); logEl.textContent += line + "\n"; logEl.scrollTop = logEl.scrollHeight; }
+const term = {
+  clean(){ logEl.textContent = ""; },
+  writeLine(d){ log(d); },
+  write(d){ logEl.classList.remove("hide"); logEl.textContent += d; logEl.scrollTop = logEl.scrollHeight; }
+};
+
+let fwBinary = null;
+async function loadFirmware(){
+  if (fwBinary) return fwBinary;
+  setStatus("Downloading firmware…");
+  const r = await fetch(FW_URL);
+  if (!r.ok) throw new Error("Could not load firmware image ("+r.status+")");
+  const buf = new Uint8Array(await r.arrayBuffer());
+  let s = ""; for (let i=0;i<buf.length;i++) s += String.fromCharCode(buf[i]);
+  fwBinary = s;
+  $("#fwpill").classList.remove("hide");
+  metaEl.textContent = "image: " + (buf.length/1024/1024).toFixed(2) + " MB · flashed at 0x0";
+  return s;
+}
+
+async function run(eraseAll){
+  $("#flash").disabled = true; $("#erase").disabled = true;
+  barEl.style.width = "0%";
+  let transport, loader;
+  try {
+    const data = await loadFirmware();
+    setStatus("Select the serial port for the M5StickC Plus2…");
+    const port = await navigator.serial.requestPort();
+    transport = new Transport(port, true);
+    loader = new ESPLoader({ transport, baudrate: 921600, romBaudrate: 115200, terminal: term });
+    setStatus("Connecting to the device…");
+    const chip = await loader.main();
+    log("Detected: " + chip);
+    setStatus((eraseAll ? "Erasing chip, then flashing " : "Flashing ") + "— keep it plugged in…");
+    await loader.writeFlash({
+      fileArray: [{ data, address: 0x0 }],
+      flashSize: "keep", flashMode: "keep", flashFreq: "keep",
+      eraseAll, compress: true,
+      reportProgress: (i, written, total) => {
+        const pct = Math.round(100*written/total);
+        barEl.style.width = pct + "%";
+        setStatus("Writing… " + pct + "%");
+      },
+    });
+    barEl.style.width = "100%";
+    setStatus("Done! Rebooting the Stick into TagTinker ✓", "ok");
+    log("Flash complete. Resetting…");
+    try { await loader.after(); } catch(_) {}
+    try { await transport.setDTR(false); await transport.setRTS(true);
+          await new Promise(r=>setTimeout(r,100)); await transport.setRTS(false); } catch(_){}
+  } catch (e) {
+    console.error(e);
+    const msg = (e && e.message) ? e.message : String(e);
+    if (/No port selected|cancelled|aborted/i.test(msg)) setStatus("Cancelled — no port selected.", "err");
+    else setStatus("Failed: " + msg, "err");
+    log("ERROR: " + msg);
+  } finally {
+    try { if (transport) await transport.disconnect(); } catch(_){}
+    $("#flash").disabled = false; $("#erase").disabled = false;
+  }
+}
+
+$("#flash").addEventListener("click", () => run(false));
+$("#erase").addEventListener("click", () => run(true));
+loadFirmware().then(()=>setStatus("Firmware ready — click Connect & Flash.")).catch(e=>setStatus(e.message,"err"));
+</script>
+</body></html>

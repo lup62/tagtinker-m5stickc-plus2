@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TagTinker M5</title>
+<style>
+:root{--bg:#0e1013;--card:#15181d;--line:#262b33;--text:#e8eaed;--dim:#9aa0aa;
+  --accent:#6c8cff;--red:#ff6b6b;--yellow:#ffd166;--ok:#5ad19a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.5}
+header{position:sticky;top:0;z-index:20;background:#111419;border-bottom:1px solid var(--line);
+  padding:12px 16px;display:flex;align-items:center;gap:10px}
+header b{font-size:17px}
+header .ver{color:var(--dim);font-size:12px}
+header .net{margin-left:auto;font-size:12px;color:var(--dim);text-align:right}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 16px}
+.card h2{margin:0 0 12px;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--dim)}
+label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border-radius:9px;
+  border:1px solid #323842;background:#1b1e24;color:var(--text)}
+textarea{resize:vertical;min-height:52px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
+button{font:inherit;padding:10px 14px;border-radius:9px;border:1px solid #323842;
+  background:#1d2026;color:var(--text);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#0b0d12;font-weight:600}
+button.danger{border-color:#5a2a2a;color:#ff9a9a}
+button:disabled{opacity:.45;cursor:default}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;background:#23272f;color:var(--dim)}
+.chip.red{background:#3a2020;color:var(--red)}.chip.yellow{background:#3a3420;color:var(--yellow)}
+.tag{border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:9px;background:#13161b}
+.tag .t{font-weight:600}.tag .s{font-size:12px;color:var(--dim);margin-top:2px}
+.tag .acts{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap}
+.tag .acts button{padding:7px 11px;font-size:13px}
+.muted{color:var(--dim);font-size:13px}
+.flex{display:flex;gap:8px;align-items:center}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{flex:0 0 auto;padding:8px 14px}
+.tabs button.on{background:var(--accent);color:#0b0d12;border-color:var(--accent);font-weight:600}
+.hide{display:none}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#20242b;
+  border:1px solid var(--line);border-radius:10px;padding:11px 16px;max-width:90%;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;z-index:60;font-size:14px}
+#toast.show{opacity:1}#toast.err{border-color:#5a2a2a;color:#ff9a9a}
+.txbox{border:1px dashed #3a4150;border-radius:11px;padding:12px;margin-top:10px;background:#12151a}
+.bar{height:8px;border-radius:6px;background:#23272f;overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+a{color:var(--accent)}
+.imgitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;
+  padding:9px 11px;margin-bottom:8px;background:#13161b}
+.imgitem .n{font-weight:600;font-size:14px}.imgitem .m{font-size:12px;color:var(--dim)}
+.grow{flex:1}
+small.hint{display:block;color:var(--dim);font-size:12px;margin-top:4px}
+</style></head>
+<body>
+<header>
+  <b>TagTinker</b><span class="ver" id="ver"></span>
+  <div class="net" id="net">connecting…</div>
+</header>
+<div class="wrap">
+  <div class="tabs">
+    <button data-tab="send" class="on">Send</button>
+    <button data-tab="targets">Targets</button>
+    <button data-tab="images">Images</button>
+    <button data-tab="broadcast">Broadcast</button>
+    <button data-tab="settings">Settings</button>
+  </div>
+
+  <!-- status box, always visible when busy -->
+  <div class="card hide" id="statuscard">
+    <h2>Transmission</h2>
+    <div class="flex"><b id="st-type">—</b><span class="grow"></span>
+      <button class="danger" id="st-stop">Stop</button></div>
+    <div id="st-msg" class="muted" style="margin-top:6px">—</div>
+    <div class="bar"><i id="st-bar"></i></div>
+  </div>
+
+  <!-- SEND -->
+  <section data-panel="send">
+    <div class="card">
+      <h2>Push text</h2>
+      <label>Target</label>
+      <select id="txt-target"></select>
+      <label>Text</label>
+      <textarea id="txt-text" maxlength="63" placeholder="Hello from M5!"></textarea>
+      <div id="txt-recents" class="inline" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:12px">
+        <div><label>Page</label>
+          <select id="txt-page"><option>1</option><option>2</option><option>3</option>
+          <option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+        <div><label>Padding %</label><input id="txt-pad" type="number" min="0" max="45" value="5"></div>
+      </div>
+      <div class="inline" style="margin-top:10px">
+        <label class="flex" style="margin:0"><input type="checkbox" id="txt-invert" style="width:auto"> Invert</label>
+        <label class="flex" style="margin:0"><input type="checkbox" id="txt-accent" style="width:auto"> Accent colour</label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="txt-send">Send text</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Push image</h2>
+      <p class="muted">Prepare &amp; upload images in the <a href="/prep">Image Prep tool</a>, then pick one here.</p>
+      <label>Target</label><select id="img-target"></select>
+      <label>Image</label><select id="img-name"></select>
+      <div class="row" style="margin-top:12px">
+        <div><label>Page</label>
+          <select id="img-page"><option>1</option><option>2</option><option>3</option>
+          <option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+        <div><label class="flex" style="margin-top:28px"><input type="checkbox" id="img-accent" style="width:auto"> Accent</label></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="primary" id="img-send">Send image</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Ping / Flash LED</h2>
+      <p class="muted">Wake a saved tag and blink its status LED to confirm it hears you.</p>
+      <label>Target</label><select id="ping-target"></select>
+      <div class="row" style="margin-top:12px"><button id="ping-send">Ping &amp; flash</button></div>
+    </div>
+  </section>
+
+  <!-- TARGETS -->
+  <section data-panel="targets" class="hide">
+    <div class="card">
+      <h2>Add a target</h2>
+      <label>Barcode (17 chars)</label>
+      <input id="t-bc" maxlength="17" placeholder="e.g. 0612345678901275" inputmode="numeric">
+      <small class="hint">The 17-digit code on the tag's back. Digits 13–16 pick the model.</small>
+      <label>Name (optional)</label><input id="t-name" maxlength="16" placeholder="Shelf A">
+      <div class="row" style="margin-top:14px"><button class="primary" id="t-add">Add target</button></div>
+    </div>
+    <div class="card"><h2>Saved targets</h2><div id="t-list"></div></div>
+  </section>
+
+  <!-- IMAGES -->
+  <section data-panel="images" class="hide">
+    <div class="card">
+      <h2>Upload a BMP</h2>
+      <p class="muted">1-bit (or 2-plane accent) BMP from the <a href="/prep">Image Prep tool</a>.</p>
+      <input type="file" id="up-file" accept=".bmp,image/bmp">
+      <div class="row" style="margin-top:12px"><button class="primary" id="up-btn">Upload</button></div>
+    </div>
+    <div class="card"><h2>Image library</h2><div id="i-list"></div></div>
+  </section>
+
+  <!-- BROADCAST -->
+  <section data-panel="broadcast" class="hide">
+    <div class="card">
+      <h2>Broadcast page (all tags)</h2>
+      <p class="muted">Flips every DM tag in range to the given page. No target needed.</p>
+      <div class="row">
+        <div><label>Page (0–7)</label><input id="bc-page" type="number" min="0" max="7" value="0"></div>
+        <div><label>Duration (s)</label><input id="bc-dur" type="number" min="2" max="1200" value="15"></div>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <div><label>Repeats</label><input id="bc-rep" type="number" min="1" max="2000" value="200"></div>
+        <div><label class="flex" style="margin-top:28px"><input type="checkbox" id="bc-forever" style="width:auto"> Forever</label></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="primary" id="bc-send">Broadcast</button></div>
+    </div>
+    <div class="card">
+      <h2>Diagnostic screen</h2>
+      <p class="muted">Asks tags to show their built-in debug page.</p>
+      <div class="row"><button id="bc-debug">Send debug screen</button></div>
+    </div>
+    <div class="card">
+      <h2>IR LED test</h2>
+      <p class="muted">Blinks the IR LED for 3 s — view it through a phone camera to confirm it works.</p>
+      <div class="row"><button id="ir-test">Run IR test</button></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section data-panel="settings" class="hide">
+    <div class="card">
+      <h2>Transmit settings</h2>
+      <div class="row">
+        <div><label>Data-frame repeats (1–10)</label><input id="s-drep" type="number" min="1" max="10"></div>
+        <div><label>Compression</label>
+          <select id="s-comp"><option value="0">Auto</option><option value="1">Raw</option><option value="2">RLE</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>IR LED GPIO</label><input id="s-irpin" type="number" min="0" max="40"></div>
+        <div><label class="flex" style="margin-top:28px"><input type="checkbox" id="s-irinv" style="width:auto"> Invert IR output</label></div>
+      </div>
+      <small class="hint">Internal IR LED is GPIO 19. Use an external LED on another pin for more range.</small>
+      <div class="row" style="margin-top:10px">
+        <div><label>Screen brightness</label><input id="s-bright" type="number" min="10" max="255"></div>
+        <div><label class="flex" style="margin-top:28px"><input type="checkbox" id="s-sound" style="width:auto"> Beeps</label></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="primary" id="s-save">Save settings</button></div>
+    </div>
+    <div class="card">
+      <h2>Wi-Fi</h2>
+      <label>Access-point name (blank = auto)</label><input id="s-apssid" maxlength="31">
+      <small class="hint">Changing the AP name needs a reboot.</small>
+      <label style="margin-top:12px">Join an existing network (optional)</label>
+      <input id="s-stassid" placeholder="Home SSID">
+      <input id="s-stapass" type="password" placeholder="password" style="margin-top:8px">
+      <div class="row" style="margin-top:14px">
+        <button id="s-wifi">Save &amp; join Wi-Fi</button>
+        <button class="danger" id="s-reboot">Reboot M5</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="muted" style="text-align:center">TagTinker for M5StickC Plus2 · IR ESL research · GPL-3.0</p>
+</div>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const api=async(u,b)=>{const o=b?{method:"POST",body:new URLSearchParams(b)}:undefined;
+  const r=await fetch(u,o);return r.json();};
+let toastT;
+function toast(t,err){const e=$("#toast");e.textContent=t;e.className="show"+(err?" err":"");
+  clearTimeout(toastT);toastT=setTimeout(()=>e.className="",3200);}
+async function act(u,b,okmsg){try{const j=await api(u,b);if(j&&j.ok===false){toast(j.error||"Error",true);return null;}
+  if(okmsg)toast(okmsg);return j;}catch(e){toast("Network error",true);return null;}}
+
+/* tabs */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  document.querySelectorAll("section[data-panel]").forEach(s=>s.classList.add("hide"));
+  $('section[data-panel="'+b.dataset.tab+'"]').classList.remove("hide");
+});
+
+let lastSeq=-1, state=null;
+function fillSelect(sel,targets,graphicsOnly){
+  const prev=sel.value;sel.innerHTML="";
+  const list=graphicsOnly?targets.filter(t=>t.graphics):targets;
+  if(!list.length){const o=document.createElement("option");o.value="";o.textContent="(none)";sel.appendChild(o);}
+  list.forEach(t=>{const o=document.createElement("option");o.value=t.i;
+    o.textContent=t.name+" · "+(t.profile.known?t.profile.w+"x"+t.profile.h+" "+t.profile.color:"unknown");
+    sel.appendChild(o);});
+  if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+}
+function renderTargets(t){
+  fillSelect($("#txt-target"),t,true);
+  fillSelect($("#img-target"),t,true);
+  fillSelect($("#ping-target"),t,false);
+  const L=$("#t-list");L.innerHTML="";
+  if(!t.length){L.innerHTML='<p class="muted">No targets yet. Add one above.</p>';return;}
+  t.forEach(x=>{
+    const p=x.profile;const cc=p.color==="Red"?"red":p.color==="Yellow"?"yellow":"";
+    const d=document.createElement("div");d.className="tag";
+    d.innerHTML=`<div class="t">${esc(x.name)}</div>
+      <div class="s">${esc(x.barcode)} · <span class="chip ${cc}">${p.known?esc(p.model):"Unknown type "+p.type}</span>
+      ${p.known?p.w+"×"+p.h+" "+p.kind:""}</div>
+      <div class="acts">
+        <button data-a="rename" data-i="${x.i}">Rename</button>
+        ${!p.known||p.kind!=="Graphic"?`<button data-a="custom" data-i="${x.i}">Set size</button>`:""}
+        <button data-a="del" data-i="${x.i}" class="danger">Delete</button>
+      </div>`;
+    L.appendChild(d);
+  });
+  L.querySelectorAll("button").forEach(b=>b.onclick=()=>targetAction(b.dataset.a,b.dataset.i));
+}
+function renderTexts(texts){
+  const C=$("#txt-recents");C.innerHTML="";
+  texts.slice(0,6).forEach(t=>{const b=document.createElement("button");b.textContent=t.length>18?t.slice(0,17)+"…":t;
+    b.style.flex="0 0 auto";b.onclick=()=>$("#txt-text").value=t;C.appendChild(b);});
+}
+function renderImages(imgs){
+  const sel=$("#img-name");const prev=sel.value;sel.innerHTML="";
+  if(!imgs.length){const o=document.createElement("option");o.value="";o.textContent="(no images)";sel.appendChild(o);}
+  imgs.forEach(im=>{const o=document.createElement("option");o.value=im.name;
+    o.textContent=im.name+" ("+im.w+"x"+im.h+")";sel.appendChild(o);});
+  if(prev)sel.value=prev;
+  const L=$("#i-list");L.innerHTML="";
+  if(!imgs.length){L.innerHTML='<p class="muted">No images uploaded yet.</p>';return;}
+  imgs.forEach(im=>{const d=document.createElement("div");d.className="imgitem";
+    d.innerHTML=`<div class="grow"><div class="n">${esc(im.name)}</div>
+      <div class="m">${im.w}×${im.h} · ${im.bpp}bpp · ${(im.size/1024).toFixed(1)} KB</div></div>
+      <button class="danger" data-n="${esc(im.name)}">Delete</button>`;
+    d.querySelector("button").onclick=async()=>{if(await act("/api/image/delete",{name:im.name},"Deleted"))refresh();};
+    L.appendChild(d);});
+}
+function applySettings(s){
+  if(document.activeElement&&document.activeElement.tagName==="INPUT")return;
+  $("#s-drep").value=s.data_repeats;$("#s-comp").value=s.compression;
+  $("#s-irpin").value=s.ir_pin;$("#s-irinv").checked=s.ir_invert;
+  $("#s-bright").value=s.brightness;$("#s-sound").checked=s.sound;
+  $("#s-apssid").value=s.ap_ssid;$("#s-stassid").value=s.sta_ssid;
+  $("#txt-page").value=s.page;$("#img-page").value=s.page;$("#txt-pad").value=s.txt_padding;
+  $("#txt-invert").checked=s.txt_invert;$("#txt-accent").checked=s.txt_accent;
+  $("#bc-page").value=s.bc_page;$("#bc-dur").value=s.bc_duration;
+  $("#bc-rep").value=s.bc_repeats;$("#bc-forever").checked=s.bc_forever;
+}
+function renderStatus(tx){
+  const card=$("#statuscard");
+  if(tx.busy){card.classList.remove("hide");
+    $("#st-type").textContent=tx.type;$("#st-msg").textContent=tx.msg;
+    $("#st-bar").style.width=(tx.total?Math.round(100*tx.done/tx.total):0)+"%";
+  }else{
+    if(tx.seq!==lastSeq&&lastSeq!==-1){
+      toast(tx.cancelled?"Stopped":tx.ok?"Done ✓":"Send failed — "+tx.msg,!tx.ok&&!tx.cancelled);
+    }
+    setTimeout(()=>{if(!state||!state.tx.busy)card.classList.add("hide");},tx.seq!==lastSeq?1500:0);
+    $("#st-bar").style.width="100%";
+  }
+  lastSeq=tx.seq;
+}
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function refresh(){
+  try{state=await api("/api/state");}catch(e){$("#net").textContent="offline";return;}
+  $("#ver").textContent="v"+state.version;
+  $("#net").innerHTML="AP "+esc(state.ap)+(state.sta?" · WiFi "+esc(state.sta_ip):"")+
+    "<br>"+(state.heap/1024|0)+" KB free";
+  renderTargets(state.targets);renderTexts(state.texts);renderImages(state.images);
+  applySettings(state.settings);renderStatus(state.tx);
+}
+
+/* actions */
+async function targetAction(a,i){
+  if(a==="del"){if(await act("/api/target/delete",{i},"Deleted"))refresh();}
+  else if(a==="rename"){const n=prompt("New name:");if(n!==null&&await act("/api/target/rename",{i,name:n},"Renamed"))refresh();}
+  else if(a==="custom"){const w=prompt("Width px (multiple of 8, 8–800):","200");if(w===null)return;
+    const h=prompt("Height px (8–800):","80");if(h===null)return;
+    const c=prompt("Colour: 0=mono 1=red 2=yellow","0");if(c===null)return;
+    if(await act("/api/target/custom",{i,w,h,color:c},"Size set"))refresh();}
+}
+$("#t-add").onclick=async()=>{const j=await act("/api/target/add",
+  {barcode:$("#t-bc").value,name:$("#t-name").value},"Target added");
+  if(j){$("#t-bc").value="";$("#t-name").value="";refresh();}};
+$("#txt-send").onclick=()=>{const t=$("#txt-target").value;if(!t){toast("Pick a target",true);return;}
+  act("/api/tx",{what:"text",target:t,text:$("#txt-text").value,page:$("#txt-page").value,
+    padding:$("#txt-pad").value,invert:$("#txt-invert").checked?1:0,accent:$("#txt-accent").checked?1:0},"Sending…");};
+$("#img-send").onclick=()=>{const t=$("#img-target").value;if(!t){toast("Pick a target",true);return;}
+  const im=$("#img-name").value;if(!im){toast("Pick an image",true);return;}
+  act("/api/tx",{what:"image",target:t,image:im,page:$("#img-page").value,accent:$("#img-accent").checked?1:0},"Sending…");};
+$("#ping-send").onclick=()=>{const t=$("#ping-target").value;if(!t){toast("Pick a target",true);return;}
+  act("/api/tx",{what:"ping",target:t},"Pinging…");};
+$("#bc-send").onclick=()=>act("/api/tx",{what:"broadcast",page:$("#bc-page").value,duration:$("#bc-dur").value,
+  repeats:$("#bc-rep").value,forever:$("#bc-forever").checked?1:0},"Broadcasting…");
+$("#bc-debug").onclick=()=>act("/api/tx",{what:"debug",repeats:50},"Sending…");
+$("#ir-test").onclick=()=>act("/api/tx",{what:"irtest"},"IR test running…");
+$("#st-stop").onclick=()=>act("/api/tx/stop",{},"Stopping…");
+$("#s-save").onclick=()=>act("/api/settings",{data_repeats:$("#s-drep").value,compression:$("#s-comp").value,
+  ir_pin:$("#s-irpin").value,ir_invert:$("#s-irinv").checked?1:0,brightness:$("#s-bright").value,
+  sound:$("#s-sound").checked?1:0,page:$("#txt-page").value,txt_padding:$("#txt-pad").value,
+  txt_invert:$("#txt-invert").checked?1:0,txt_accent:$("#txt-accent").checked?1:0,
+  bc_page:$("#bc-page").value,bc_duration:$("#bc-dur").value,bc_repeats:$("#bc-rep").value,
+  bc_forever:$("#bc-forever").checked?1:0,ap_ssid:$("#s-apssid").value},"Saved");
+$("#s-wifi").onclick=()=>act("/api/wifi",{ssid:$("#s-stassid").value,pass:$("#s-stapass").value},"Saved — joining…");
+$("#s-reboot").onclick=()=>{if(confirm("Reboot the M5 now?"))act("/api/reboot",{},"Rebooting…");};
+$("#up-btn").onclick=async()=>{const f=$("#up-file").files[0];if(!f){toast("Choose a file",true);return;}
+  const fd=new FormData();fd.append("file",f,f.name);toast("Uploading…");
+  try{const r=await fetch("/api/image/upload",{method:"POST",body:fd});const j=await r.json();
+    if(!j.ok){toast(j.error||"Upload failed",true);return;}toast("Uploaded "+j.name);$("#up-file").value="";refresh();}
+  catch(e){toast("Upload error",true);}};
+
+refresh();setInterval(refresh,1200);
+</script>
+</body></html>
